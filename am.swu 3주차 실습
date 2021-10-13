@@ -1,24 +1,66 @@
+# 사용할 라이브러리 import
 import pandas as pd
 import numpy
 
-test_file = pd.read_csv('test.csv')
-test_file.head()
+#데이터셋 불러오기
+train_file = pd.read_csv('train.csv')
 
-test_file.isna().sum()
+#데이터셋이 어떻게 생겼는지 확인해보기
+train_file.head()
 
-Survived = test_file['Age']
+# 데이터에 null값이 있는지 확인하기
+train_file.isnull().sum()
 
-test_file.drop(labels=['Fare'], axis=1, inplace=True)
-test_file.drop(labels=['Cabin'], axis=1, inplace=True)
-test_file.drop(labels=['Name'], axis=1, inplace=True)
-test_file.drop(labels=['PassengerId'], axis=1, inplace=True)
-test_file.drop(labels=['Ticket'], axis=1, inplace=True)
+# null값을 어떤 식으로 처리할 지 고민해보기
 
-test_file['Sex'] = test_file['Sex'].map({"male":1, "female":2})
-test_file['Embarked'] = test_file['Embarked'].map({"Q":1, "S":2, "C":3})
+# 타겟 데이터 변수 할당
+y_train = train_file['Survived']
 
-test_file
+# 타겟 데이터와 불필요 데이터 삭제
+train_file.drop(labels=['Embarked'], axis=1, inplace=True)
+train_file.drop(labels=['Cabin'], axis=1, inplace=True)
+train_file.drop(labels=['Name'], axis=1, inplace=True)
+train_file.drop(labels=['PassengerId'], axis=1, inplace=True)
+train_file.drop(labels=['Ticket'], axis=1, inplace=True)
 
+# 성별 데이터를 숫자로 변환
+train_file['Sex'] = train_file['Sex'].map({"male":1, "female":2})
+
+# 입력 데이터가 제대로 준비되었는지 확인
+train_file
+
+# 모델 학습을 위한 x 값을 지정하기 (원래 있던 train_file 에 포함되어 있던 y값 제거)
+x_train = train_file(labels=['Survived'], axis=1) # inplace=True 를 쓰지 않는 이유? 원래 있던 train_file 을 제거하지 않기 위해
+x_train
+
+# 로지스틱 회귀 모델 생성 후 모델 훈련
 from sklearn.linear_model import LogisticRegression
 lr = LogisticRegression()
-# 여기서부터 오류
+lr.fit(x_train, y_train)
+
+# 학습된 모델에 넣을 test set 데이터 프레임 설정
+x_test = pd.read_csv('test.csv')
+x_test.head()
+
+x_test.drop(labels=['Cabin'], axis=1, inplace=True)
+x_test.drop(labels=['Name'], axis=1, inplace=True)
+x_test.drop(labels=['PassengerId'], axis=1, inplace=True)
+x_test.drop(labels=['Ticket'], axis=1, inplace=True)
+x_test.drop(labels=['Embarked'], axis=1, inplace=True)
+
+x_test['Sex'] = x_test['Sex'].map({"male":1, "female":2})
+
+x_test.isna().sum()
+
+x_test=x_test.drop(x_test[x_test['Fare'].isna()].index)
+x_test
+
+# 예측 결과 출력
+lr.predict(x_test)
+
+# 가상의 승객이 탑승했을 때 조건을 가정하여 생존확률을 예측
+live = lr.predict([[2, 2, 24.0, 0, 0, 30.0000]])
+if live == 1:
+  print('생존')
+ else:
+  print('사망')
